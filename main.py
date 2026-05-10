@@ -149,6 +149,36 @@ async def contact_page(request: Request):
     })
 
 
+@app.get("/blog", response_class=HTMLResponse)
+async def blog_list(request: Request):
+    conn = get_db()
+    posts = conn.execute("SELECT * FROM blog_posts WHERE is_published=1 ORDER BY created_at DESC").fetchall()
+    conn.close()
+    ctx = common_context()
+    return templates.TemplateResponse(request, "blog_list.html", context={
+        **ctx, "posts": posts,
+        "meta_title": "Party Decoration Blog — Tips, Ideas & Price Guides | PartyBing Pune",
+        "meta_description": "Read our latest articles on party decoration ideas, pricing guides, and tips for celebrations in Pune. Expert advice from PartyBing.",
+    })
+
+
+@app.get("/blog/{slug}", response_class=HTMLResponse)
+async def blog_post(request: Request, slug: str):
+    conn = get_db()
+    post = conn.execute("SELECT * FROM blog_posts WHERE slug=? AND is_published=1", (slug,)).fetchone()
+    if not post:
+        conn.close()
+        raise HTTPException(status_code=404)
+    conn.close()
+    ctx = common_context()
+    meta_title = post["meta_title"] or post["title"]
+    meta_desc = post["meta_description"] or post["excerpt"]
+    return templates.TemplateResponse(request, "blog_post.html", context={
+        **ctx, "post": post,
+        "meta_title": meta_title, "meta_description": meta_desc,
+    })
+
+
 @app.post("/inquiry")
 async def submit_inquiry(
     name: str = Form(...), phone: str = Form(...),
@@ -170,11 +200,13 @@ async def sitemap(request: Request):
     conn = get_db()
     services = conn.execute("SELECT slug FROM services WHERE is_active=1").fetchall()
     localities = conn.execute("SELECT slug FROM localities WHERE is_active=1").fetchall()
+    blog_posts = conn.execute("SELECT slug FROM blog_posts WHERE is_published=1").fetchall()
     conn.close()
     base = "https://partybing.in"
-    urls = [base + "/", base + "/gallery", base + "/contact"]
+    urls = [base + "/", base + "/gallery", base + "/contact", base + "/blog"]
     urls += [f"{base}/services/{s['slug']}" for s in services]
     urls += [f"{base}/area/{l['slug']}" for l in localities]
+    urls += [f"{base}/blog/{p['slug']}" for p in blog_posts]
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -285,6 +317,29 @@ async def admin_delete_gallery(request: Request, item_id: int):
     conn.commit()
     conn.close()
     return RedirectResponse("/admin/gallery", status_code=302)
+
+@app.get("/admin/blog", response_class=HTMLResponse)
+async def admin_blog(request: Request):
+    verify_admin(request)
+    conn = get_db()
+    posts = conn.execute("SELECT * FROM blog_posts ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return templates.TemplateResponse(request, "admin/blog.html", context={"posts": posts})
+
+@app.post("/admin/blog/{post_id}/update")
+async def admin_update_blog(request: Request, post_id: int):
+    verify_admin(request)
+    form = await request.form()
+    conn = get_db()
+    conn.execute("""UPDATE blog_posts SET title=?, slug=?, meta_title=?, meta_description=?,
+        excerpt=?, content=?, tags=?, is_published=?, updated_at=CURRENT_TIMESTAMP WHERE id=?""",
+        (form["title"], form["slug"], form.get("meta_title", ""), form.get("meta_description", ""),
+         form.get("excerpt", ""), form.get("content", ""), form.get("tags", ""),
+         1 if form.get("is_published") else 0, post_id))
+    conn.commit()
+    conn.close()
+    invalidate_cache()
+    return RedirectResponse("/admin/blog", status_code=302)
 
 @app.get("/admin/testimonials", response_class=HTMLResponse)
 async def admin_testimonials(request: Request):

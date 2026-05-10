@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | PartyBing Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+        .admin-nav { background: #1a1a2e; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .admin-nav h2 { font-size: 1.1rem; }
+        .admin-nav a { color: #aaa; margin-left: 20px; font-size: 0.9rem; text-decoration: none; }
+        .admin-nav a:hover { color: white; }
+        .admin-nav a.active { color: #e91e63; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .post-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .post-card h3 { font-size: 1rem; margin-bottom: 4px; }
+        .post-card p { font-size: 0.8rem; color: #666; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; text-decoration: none; display: inline-block; }
+        .btn-edit { background: #e3f2fd; color: #1565c0; }
+        .btn-save { background: #e91e63; color: white; }
+        .badge { padding: 3px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+        .badge-published { background: #e8f5e9; color: #2e7d32; }
+        .badge-draft { background: #fff3e0; color: #ef6c00; }
+        .edit-form { background: white; padding: 24px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
+        .edit-form.active { display: block; }
+        label { font-size: 0.8rem; color: #666; font-weight: 500; display: block; margin-bottom: 4px; margin-top: 12px; }
+        input, textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 0.9rem; font-family: inherit; }
+        textarea { resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <h2>🎈 PartyBing Admin</h2>
+        <div>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/services">Services</a>
+            <a href="/admin/gallery">Gallery</a>
+            <a href="/admin/blog" class="active">Blog</a>
+            <a href="/admin/testimonials">Testimonials</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/admin/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 style="margin-bottom:20px;">Blog Posts</h2>
+
+        {% for post in posts %}
+        <div class="post-card">
+            <div>
+                <h3>{{ post.title }}</h3>
+                <p>{{ post.created_at[:10] }} · <span class="badge {{ 'badge-published' if post.is_published else 'badge-draft' }}">{{ 'Published' if post.is_published else 'Draft' }}</span></p>
+            </div>
+            <div>
+                <a href="/blog/{{ post.slug }}" target="_blank" class="btn btn-edit">View</a>
+                <button class="btn btn-edit" onclick="toggleEdit({{ post.id }})">Edit</button>
+            </div>
+        </div>
+        <div class="edit-form" id="edit-{{ post.id }}">
+            <form method="POST" action="/admin/blog/{{ post.id }}/update">
+                <div class="form-row">
+                    <div>
+                        <label>Title</label>
+                        <input type="text" name="title" value="{{ post.title }}">
+                    </div>
+                    <div>
+                        <label>Slug</label>
+                        <input type="text" name="slug" value="{{ post.slug }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label>Meta Title (SEO)</label>
+                        <input type="text" name="meta_title" value="{{ post.meta_title or '' }}">
+                    </div>
+                    <div>
+                        <label>Meta Description (SEO)</label>
+                        <input type="text" name="meta_description" value="{{ post.meta_description or '' }}">
+                    </div>
+                </div>
+                <label>Excerpt</label>
+                <textarea name="excerpt" rows="2">{{ post.excerpt or '' }}</textarea>
+                <label>Content (HTML)</label>
+                <textarea name="content" rows="10">{{ post.content or '' }}</textarea>
+                <label>Tags (comma separated)</label>
+                <input type="text" name="tags" value="{{ post.tags or '' }}">
+                <div style="margin-top:12px;">
+                    <label><input type="checkbox" name="is_published" {% if post.is_published %}checked{% endif %}> Published</label>
+                </div>
+                <button type="submit" class="btn btn-save" style="margin-top:12px;">Save Changes</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+    function toggleEdit(id) {
+        document.getElementById('edit-' + id).classList.toggle('active');
+    }
+    </script>
+</body>
+</html>

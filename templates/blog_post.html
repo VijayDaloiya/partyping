@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{{ post.title }}",
+    "description": "{{ post.meta_description or post.excerpt }}",
+    "author": {"@type": "Organization", "name": "PartyBing"},
+    "publisher": {"@type": "Organization", "name": "PartyBing"},
+    "datePublished": "{{ post.created_at }}",
+    "dateModified": "{{ post.updated_at or post.created_at }}"
+}
+</script>
+<style>
+    .blog-content h2 { font-size: 1.6rem; margin-top: 32px; margin-bottom: 12px; color: var(--dark); }
+    .blog-content h3 { font-size: 1.25rem; margin-top: 24px; margin-bottom: 10px; color: var(--dark); }
+    .blog-content h4 { font-size: 1.1rem; margin-top: 20px; margin-bottom: 8px; }
+    .blog-content p { color: var(--gray); line-height: 1.8; margin-bottom: 14px; }
+    .blog-content ul, .blog-content ol { color: var(--gray); margin-bottom: 16px; padding-left: 24px; line-height: 1.8; }
+    .blog-content li { margin-bottom: 6px; }
+    .blog-content strong { color: var(--dark); }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="service-hero">
+    <div class="container">
+        <span class="section-badge"><a href="/blog" style="color:inherit;">← Blog</a></span>
+        <h1>{{ post.title }}</h1>
+        <p style="color:var(--gray); margin-top:8px;">{{ post.excerpt }}</p>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="service-content">
+            <div class="blog-content">
+                {{ post.content | safe }}
+            </div>
+
+            <div class="service-sidebar">
+                <h3>📱 Book Decoration</h3>
+                <p style="color:var(--gray); font-size:0.9rem; margin-bottom:16px;">Want something from this article? Let's make it happen!</p>
+                <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20read%20your%20blog%20about%20{{ post.title | urlencode }}%20and%20want%20to%20book." class="btn btn-whatsapp" style="width:100%; justify-content:center; margin-bottom:16px;">💬 WhatsApp Book</a>
+                <a href="tel:+{{ settings.phone }}" class="btn btn-outline" style="width:100%; justify-content:center; margin-bottom:24px;">📞 Call Us</a>
+
+                <h4 style="margin-top:20px; margin-bottom:12px;">Our Services</h4>
+                {% for s in services[:6] %}
+                <a href="/services/{{ s.slug }}" style="display:block; padding:8px 0; color:var(--primary); font-size:0.9rem;">→ {{ s.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <h2>Ready to Book Your Decoration?</h2>
+        <p>Professional doorstep setup in Pune. Starting ₹2499.</p>
+        <div class="cta-buttons">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20to%20book%20decoration%20in%20Pune." class="btn btn-primary">💬 Book Now</a>
+            <a href="/contact" class="btn btn-outline" style="border-color:white;color:white;">Get Free Quote</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

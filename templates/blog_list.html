@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="locality-hero">
+    <div class="container">
+        <span class="section-badge">PartyBing Blog</span>
+        <h1>Decoration Ideas, Tips & Guides</h1>
+        <p>Expert advice on party decoration in Pune — themes, pricing, and inspiration</p>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="services-grid">
+            {% for post in posts %}
+            <a href="/blog/{{ post.slug }}" class="service-card">
+                <div class="service-card-img">
+                    {% if post.image %}
+                    <img src="{{ post.image }}" alt="{{ post.title }}" loading="lazy">
+                    {% else %}
+                    <div class="placeholder-img">📝</div>
+                    {% endif %}
+                </div>
+                <div class="service-card-body">
+                    <h3>{{ post.title }}</h3>
+                    <p>{{ post.excerpt }}</p>
+                    <div class="service-card-footer">
+                        <span style="font-size:0.8rem; color:var(--gray);">{{ post.created_at[:10] }}</span>
+                        <span class="btn btn-sm btn-outline">Read →</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <h2>Need Decoration for Your Event?</h2>
+        <p>Starting ₹2499. Professional doorstep setup across all Pune.</p>
+        <div class="cta-buttons">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20to%20book%20decoration." class="btn btn-primary">💬 Book on WhatsApp</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
