@@ -20,14 +20,25 @@ https://partybing.in
 ssh ec2-user@13.200.119.43
 
 # Deploy latest code
-cd ~/apps/partybing && git pull && kill $(pgrep -f 'uvicorn.*8002') && nohup venv/bin/uvicorn main:app --host 127.0.0.1 --port 8002 > uvicorn.log 2>&1 &
+cd ~/apps/partybing && git pull && sudo systemctl restart partybing
 
-# Check if running
-ss -tlnp | grep 8002
+# Check status
+sudo systemctl status partybing
 
-# View logs
-tail -f ~/apps/partybing/uvicorn.log
+# View logs (live)
+sudo journalctl -u partybing -f
+
+# Restart / Stop / Start
+sudo systemctl restart partybing
+sudo systemctl stop partybing
+sudo systemctl start partybing
 ```
+
+## Systemd Service
+- **File:** `/etc/systemd/system/partybing.service`
+- **Auto-start:** on server reboot (enabled)
+- **Auto-restart:** on crash (3 sec delay)
+- **Workers:** 2
 
 ## Pages (33 indexable)
 
