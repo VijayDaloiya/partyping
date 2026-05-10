@@ -11,6 +11,13 @@
 
 <section>
     <div class="container">
+        {% set blog_icons = {
+            'birthday-decoration-ideas-pune': '🎂',
+            'balloon-decoration-cost-pune': '🎈',
+            'best-party-decorators-wakad-pune': '🏆',
+            'haldi-decoration-ideas-at-home': '🌼',
+            'baby-shower-decoration-themes-pune': '👶'
+        } %}
         <div class="services-grid">
             {% for post in posts %}
             <a href="/blog/{{ post.slug }}" class="service-card">
@@ -18,7 +25,7 @@
                     {% if post.image %}
                     <img src="{{ post.image }}" alt="{{ post.title }}" loading="lazy">
                     {% else %}
-                    <div class="placeholder-img">📝</div>
+                    <div class="placeholder-img" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9, #a5d6a7);">{{ blog_icons.get(post.slug, '📝') }}</div>
                     {% endif %}
                 </div>
                 <div class="service-card-body">
