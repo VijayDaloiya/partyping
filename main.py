@@ -2,11 +2,18 @@ from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException, Dep
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.gzip import GZipMiddleware
 from database import init_db, get_db, get_all_settings, get_setting
 import os, json, shutil, uuid
 from datetime import datetime
+from functools import lru_cache
+from PIL import Image
+import time
 
 app = FastAPI()
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Static files with cache headers
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
@@ -16,13 +23,49 @@ os.makedirs("uploads", exist_ok=True)
 
 init_db()
 
+# Simple in-memory cache
+_cache = {}
+CACHE_TTL = 300  # 5 minutes
 
-def common_context():
+def cached_context():
+    now = time.time()
+    if "_ctx" in _cache and now - _cache["_ctx_time"] < CACHE_TTL:
+        return _cache["_ctx"]
+    ctx = _common_context_fresh()
+    _cache["_ctx"] = ctx
+    _cache["_ctx_time"] = now
+    return ctx
+
+def invalidate_cache():
+    _cache.clear()
+
+def _common_context_fresh():
     settings = get_all_settings()
     conn = get_db()
     services = conn.execute("SELECT * FROM services WHERE is_active=1 ORDER BY display_order, id").fetchall()
     conn.close()
     return {"settings": settings, "services": [dict(s) for s in services], "year": datetime.now().year}
+
+def optimize_image(filepath, max_width=1200, quality=80):
+    """Compress and resize uploaded images."""
+    try:
+        img = Image.open(filepath)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((max_width, new_height), Image.LANCZOS)
+        webp_path = filepath.rsplit('.', 1)[0] + '.webp'
+        img.save(webp_path, 'WEBP', quality=quality)
+        img.save(filepath, quality=quality)
+        return webp_path
+    except Exception:
+        return filepath
+
+
+def common_context():
+    return cached_context()
 
 
 # ==================== PUBLIC ROUTES ====================
@@ -205,6 +248,7 @@ async def admin_update_service(request: Request, service_id: int):
          1 if form.get("is_active") else 0, int(form.get("display_order", 0)), service_id))
     conn.commit()
     conn.close()
+    invalidate_cache()
     return RedirectResponse("/admin/services", status_code=302)
 
 @app.get("/admin/gallery", response_class=HTMLResponse)
@@ -219,11 +263,13 @@ async def admin_gallery(request: Request):
 @app.post("/admin/gallery/upload")
 async def admin_upload_image(request: Request, image: UploadFile = File(...), caption: str = Form(""), service_id: int = Form(0)):
     verify_admin(request)
-    ext = os.path.splitext(image.filename)[1]
+    ext = os.path.splitext(image.filename)[1].lower()
     filename = f"{uuid.uuid4().hex}{ext}"
     filepath = f"uploads/{filename}"
     with open(filepath, "wb") as f:
         shutil.copyfileobj(image.file, f)
+    # Optimize image (compress + create webp)
+    optimize_image(filepath)
     conn = get_db()
     conn.execute("INSERT INTO gallery (image, caption, service_id) VALUES (?,?,?)",
                  (f"/uploads/{filename}", caption, service_id if service_id else None))
@@ -272,6 +318,7 @@ async def admin_update_settings(request: Request):
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, form[key]))
     conn.commit()
     conn.close()
+    invalidate_cache()
     return RedirectResponse("/admin/settings", status_code=302)
 
 @app.post("/admin/inquiries/{inquiry_id}/status")
