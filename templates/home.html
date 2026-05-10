@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "PartyBing",
+    "url": "https://partybing.in",
+    "description": "Pune's premium party & balloon decoration service starting ₹2499"
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Pune's #1 Party & Balloon Decoration Service</h1>
+            <p>Transform any space into a celebration. Birthday, wedding, anniversary, baby shower decoration at your doorstep. Starting just ₹2499.</p>
+            <div class="hero-buttons">
+                <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi%20PartyBing!%20I%20want%20to%20book%20decoration%20in%20Pune." class="btn btn-primary">📱 Book on WhatsApp</a>
+                <a href="/contact" class="btn btn-outline" style="border-color:white;color:white;">Get Free Quote</a>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="number">500+</div>
+                    <div class="label">Events Done</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="number">4.9★</div>
+                    <div class="label">Google Rating</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="number">20+</div>
+                    <div class="label">Areas in Pune</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services -->
+<section>
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge">Our Services</span>
+            <h2>Decoration For Every Celebration</h2>
+            <p>From intimate birthday surprises to grand wedding setups, we make every event special</p>
+        </div>
+        <div class="services-grid">
+            {% for s in services %}
+            <a href="/services/{{ s.slug }}" class="service-card">
+                <div class="service-card-img">
+                    {% if s.image and '/uploads/' in s.image %}
+                    <img src="{{ s.image }}" alt="{{ s.name }} in Pune" loading="lazy">
+                    {% else %}
+                    <div class="placeholder-img">🎈</div>
+                    {% endif %}
+                </div>
+                <div class="service-card-body">
+                    <h3>{{ s.name }}</h3>
+                    <p>{{ s.short_desc }}</p>
+                    <div class="service-card-footer">
+                        <span class="service-price">₹{{ s.price }} <small>onwards</small></span>
+                        <span class="btn btn-sm btn-outline">View →</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose Us -->
+<section style="background: var(--light-gray);">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge">Why PartyBing</span>
+            <h2>Why 500+ Families Trust Us</h2>
+        </div>
+        <div class="services-grid">
+            <div class="service-card" style="text-align:center; padding:30px;">
+                <div style="font-size:3rem; margin-bottom:12px;">🏠</div>
+                <h3>Doorstep Setup</h3>
+                <p>We come to your home, hall, or venue. No travel hassle for you.</p>
+            </div>
+            <div class="service-card" style="text-align:center; padding:30px;">
+                <div style="font-size:3rem; margin-bottom:12px;">💰</div>
+                <h3>Transparent Pricing</h3>
+                <p>Starting ₹2499. No hidden charges. What you see is what you pay.</p>
+            </div>
+            <div class="service-card" style="text-align:center; padding:30px;">
+                <div style="font-size:3rem; margin-bottom:12px;">⚡</div>
+                <h3>Same Day Booking</h3>
+                <p>Last minute plans? We accept same-day bookings across Pune.</p>
+            </div>
+            <div class="service-card" style="text-align:center; padding:30px;">
+                <div style="font-size:3rem; margin-bottom:12px;">🎨</div>
+                <h3>Custom Themes</h3>
+                <p>Your idea, our execution. Fully customizable to your vision.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials -->
+<section>
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge">Reviews</span>
+            <h2>What Our Customers Say</h2>
+        </div>
+        <div class="testimonials-grid">
+            {% for t in testimonials %}
+            <div class="testimonial-card">
+                <div class="testimonial-stars">{% for i in range(t.rating) %}⭐{% endfor %}</div>
+                <p class="testimonial-text">"{{ t.text }}"</p>
+                <div class="testimonial-author">{{ t.name }}</div>
+                <div class="testimonial-service">{{ t.service }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Areas We Serve -->
+<section class="areas-strip">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge">Serving All Pune</span>
+            <h2>Areas We Cover</h2>
+            <p>Fast doorstep decoration service across all major Pune localities</p>
+        </div>
+        <div class="areas-grid">
+            <a href="/area/wakad" class="area-tag">Wakad</a>
+            <a href="/area/baner" class="area-tag">Baner</a>
+            <a href="/area/hinjewadi" class="area-tag">Hinjewadi</a>
+            <a href="/area/kothrud" class="area-tag">Kothrud</a>
+            <a href="/area/hadapsar" class="area-tag">Hadapsar</a>
+            <a href="/area/viman-nagar" class="area-tag">Viman Nagar</a>
+            <a href="/area/kharadi" class="area-tag">Kharadi</a>
+            <a href="/area/magarpatta" class="area-tag">Magarpatta</a>
+            <a href="/area/pimpri-chinchwad" class="area-tag">Pimpri Chinchwad</a>
+            <a href="/area/aundh" class="area-tag">Aundh</a>
+            <a href="/area/koregaon-park" class="area-tag">Koregaon Park</a>
+            <a href="/area/kalyani-nagar" class="area-tag">Kalyani Nagar</a>
+            <a href="/area/bavdhan" class="area-tag">Bavdhan</a>
+            <a href="/area/ravet" class="area-tag">Ravet</a>
+            <a href="/area/nigdi" class="area-tag">Nigdi</a>
+            <a href="/area/pimple-saudagar" class="area-tag">Pimple Saudagar</a>
+            <a href="/area/katraj" class="area-tag">Katraj</a>
+            <a href="/area/undri" class="area-tag">Undri</a>
+            <a href="/area/warje" class="area-tag">Warje</a>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container">
+        <h2>Ready to Make Your Event Unforgettable?</h2>
+        <p>Book your decoration now. We'll set up everything — you just enjoy!</p>
+        <div class="cta-buttons">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20to%20book%20decoration%20in%20Pune." class="btn btn-primary">💬 WhatsApp Us Now</a>
+            <a href="tel:+{{ settings.phone }}" class="btn btn-outline" style="border-color:white;color:white;">📞 Call Now</a>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Schema -->
+<section style="background: var(--light-gray);">
+    <div class="container">
+        <div class="section-header">
+            <h2>Frequently Asked Questions</h2>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">What is the starting price for decoration? <span>+</span></div>
+            <div class="faq-answer">Our decoration packages start at ₹2499. The final price depends on your theme, venue size, and customization requirements. Contact us for a free quote!</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Do you provide doorstep decoration service? <span>+</span></div>
+            <div class="faq-answer">Yes! We provide doorstep decoration service across all Pune areas including Wakad, Baner, Hinjewadi, Kothrud, Hadapsar, and more. Our team arrives with all materials and sets up everything.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">How early should I book? <span>+</span></div>
+            <div class="faq-answer">We recommend booking 2-3 days in advance for the best availability. However, we also accept same-day bookings based on availability!</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">What areas in Pune do you serve? <span>+</span></div>
+            <div class="faq-answer">We serve all major areas in Pune including Wakad, Baner, Hinjewadi, Kothrud, Hadapsar, Viman Nagar, Kharadi, Magarpatta, Pimpri-Chinchwad, Aundh, Koregaon Park, Kalyani Nagar, and many more.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Do you clean up after the event? <span>+</span></div>
+            <div class="faq-answer">Yes, we offer cleanup services after your event. Just let us know while booking and we'll take care of everything.</div>
+        </div>
+    </div>
+</section>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {"@type": "Question", "name": "What is the starting price for decoration?", "acceptedAnswer": {"@type": "Answer", "text": "Our decoration packages start at ₹2499."}},
+        {"@type": "Question", "name": "Do you provide doorstep decoration service?", "acceptedAnswer": {"@type": "Answer", "text": "Yes! We provide doorstep decoration service across all Pune areas."}},
+        {"@type": "Question", "name": "How early should I book?", "acceptedAnswer": {"@type": "Answer", "text": "We recommend booking 2-3 days in advance. We also accept same-day bookings."}},
+        {"@type": "Question", "name": "What areas in Pune do you serve?", "acceptedAnswer": {"@type": "Answer", "text": "We serve all major areas in Pune including Wakad, Baner, Hinjewadi, Kothrud, Hadapsar, Viman Nagar, and more."}},
+        {"@type": "Question", "name": "Do you clean up after the event?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, we offer cleanup services after your event."}}
+    ]
+}
+</script>
+{% endblock %}

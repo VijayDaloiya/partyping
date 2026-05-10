@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery | PartyBing Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+        .admin-nav { background: #1a1a2e; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .admin-nav h2 { font-size: 1.1rem; }
+        .admin-nav a { color: #aaa; margin-left: 20px; font-size: 0.9rem; text-decoration: none; }
+        .admin-nav a:hover { color: white; }
+        .admin-nav a.active { color: #e91e63; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .upload-form { background: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .upload-form h3 { margin-bottom: 16px; }
+        .form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .form-row > div { flex: 1; min-width: 150px; }
+        label { font-size: 0.8rem; color: #666; font-weight: 500; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 0.9rem; }
+        .btn { padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+        .btn-save { background: #e91e63; color: white; }
+        .btn-delete { background: #f44336; color: white; font-size: 0.75rem; padding: 6px 12px; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        .gallery-item { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .gallery-item img { width: 100%; height: 150px; object-fit: cover; }
+        .gallery-item-info { padding: 12px; }
+        .gallery-item-info p { font-size: 0.8rem; color: #666; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <h2>🎈 PartyBing Admin</h2>
+        <div>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/services">Services</a>
+            <a href="/admin/gallery" class="active">Gallery</a>
+            <a href="/admin/testimonials">Testimonials</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/admin/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="upload-form">
+            <h3>Upload New Image</h3>
+            <form method="POST" action="/admin/gallery/upload" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div>
+                        <label>Image File</label>
+                        <input type="file" name="image" accept="image/*" required>
+                    </div>
+                    <div>
+                        <label>Caption</label>
+                        <input type="text" name="caption" placeholder="e.g. Birthday decoration in Wakad">
+                    </div>
+                    <div>
+                        <label>Service</label>
+                        <select name="service_id">
+                            <option value="0">General</option>
+                            {% for s in services %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-save">Upload</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <h3 style="margin-bottom:16px;">Gallery Images ({{ gallery|length }})</h3>
+        <div class="gallery-grid">
+            {% for g in gallery %}
+            <div class="gallery-item">
+                <img src="{{ g.image }}" alt="{{ g.caption }}">
+                <div class="gallery-item-info">
+                    <p>{{ g.caption or 'No caption' }}</p>
+                    <p>{{ g.service_name or 'General' }}</p>
+                    <form method="POST" action="/admin/gallery/{{ g.id }}/delete">
+                        <button type="submit" class="btn btn-delete" onclick="return confirm('Delete this image?')">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not gallery %}
+            <p style="color:#666;">No images uploaded yet. Upload your first image above!</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

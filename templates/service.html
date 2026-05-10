@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "{{ service.name }} in Pune",
+    "provider": {
+        "@type": "LocalBusiness",
+        "name": "PartyBing",
+        "telephone": "+91-9503146681",
+        "address": {"@type": "PostalAddress", "addressLocality": "Pune", "addressRegion": "Maharashtra"}
+    },
+    "areaServed": "Pune",
+    "offers": {
+        "@type": "Offer",
+        "price": "{{ service.price }}",
+        "priceCurrency": "INR"
+    }
+}
+</script>
+{% if faq %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {% for item in faq %}
+        {"@type": "Question", "name": "{{ item.q }}", "acceptedAnswer": {"@type": "Answer", "text": "{{ item.a }}"}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Service Hero -->
+<section class="service-hero">
+    <div class="container">
+        <span class="section-badge">{{ service.name }}</span>
+        <h1>{{ service.name }} in Pune</h1>
+        <p style="color:var(--gray); margin-top:8px;">{{ service.short_desc }}</p>
+        <div class="price-tag">Starting ₹{{ service.price }}</div>
+    </div>
+</section>
+
+<!-- Service Content -->
+<section>
+    <div class="container">
+        <div class="service-content">
+            <div class="service-description">
+                <h2>About This Service</h2>
+                <p>{{ service.description }}</p>
+
+                <h2 style="margin-top:30px;">What's Included</h2>
+                <ul style="list-style:none; padding:0;">
+                    <li style="padding:8px 0;">✅ Premium quality decorations & materials</li>
+                    <li style="padding:8px 0;">✅ Professional setup at your location</li>
+                    <li style="padding:8px 0;">✅ Custom theme & color selection</li>
+                    <li style="padding:8px 0;">✅ LED lights & backdrop (as per package)</li>
+                    <li style="padding:8px 0;">✅ Setup & cleanup included</li>
+                    <li style="padding:8px 0;">✅ Photo-worthy arrangements</li>
+                </ul>
+
+                <h2 style="margin-top:30px;">Available Across Pune</h2>
+                <div class="areas-grid" style="justify-content:flex-start; margin-top:12px;">
+                    <a href="/area/wakad" class="area-tag">Wakad</a>
+                    <a href="/area/baner" class="area-tag">Baner</a>
+                    <a href="/area/hinjewadi" class="area-tag">Hinjewadi</a>
+                    <a href="/area/kothrud" class="area-tag">Kothrud</a>
+                    <a href="/area/hadapsar" class="area-tag">Hadapsar</a>
+                    <a href="/area/viman-nagar" class="area-tag">Viman Nagar</a>
+                    <a href="/area/koregaon-park" class="area-tag">Koregaon Park</a>
+                    <a href="/area/pimpri-chinchwad" class="area-tag">Pimpri Chinchwad</a>
+                </div>
+
+                {% if gallery %}
+                <h2 style="margin-top:30px;">Our Work</h2>
+                <div class="gallery-grid" style="margin-top:12px;">
+                    {% for g in gallery %}
+                    <div class="gallery-item">
+                        <img src="{{ g.image }}" alt="{{ g.caption or service.name }}" loading="lazy">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar with booking form -->
+            <div class="service-sidebar">
+                <h3>📱 Book Now</h3>
+                <p style="color:var(--gray); font-size:0.9rem; margin-bottom:16px;">Get instant confirmation on WhatsApp</p>
+                <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20to%20book%20{{ service.name }}%20in%20Pune.%20Please%20share%20details." class="btn btn-whatsapp" style="width:100%; justify-content:center; margin-bottom:16px;">💬 WhatsApp Book</a>
+                <a href="tel:+{{ settings.phone }}" class="btn btn-outline" style="width:100%; justify-content:center; margin-bottom:24px;">📞 Call Us</a>
+
+                <div class="inquiry-form-inline">
+                    <h3>Or Fill Quick Form</h3>
+                    <form class="inquiry-form">
+                        <input type="hidden" name="service" value="{{ service.name }}">
+                        <div class="form-group">
+                            <input type="text" name="name" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="tel" name="phone" placeholder="Phone Number" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="date" name="event_date" placeholder="Event Date">
+                        </div>
+                        <div class="form-group">
+                            <select name="locality">
+                                <option value="">Select Area</option>
+                                <option>Wakad</option>
+                                <option>Baner</option>
+                                <option>Hinjewadi</option>
+                                <option>Kothrud</option>
+                                <option>Hadapsar</option>
+                                <option>Viman Nagar</option>
+                                <option>Kharadi</option>
+                                <option>Pimpri Chinchwad</option>
+                                <option>Aundh</option>
+                                <option>Koregaon Park</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Get Free Quote</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+{% if faq %}
+<section class="faq-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Frequently Asked Questions</h2>
+        </div>
+        {% for item in faq %}
+        <div class="faq-item">
+            <div class="faq-question">{{ item.q }} <span>+</span></div>
+            <div class="faq-answer">{{ item.a }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container">
+        <h2>Book {{ service.name }} in Pune Today!</h2>
+        <p>Starting at just ₹{{ service.price }}. Professional setup at your doorstep.</p>
+        <div class="cta-buttons">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20{{ service.name }}%20in%20Pune." class="btn btn-primary">💬 Book on WhatsApp</a>
+            <a href="/contact" class="btn btn-outline" style="border-color:white;color:white;">Get Free Quote</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

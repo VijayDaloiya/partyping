@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="locality-hero">
+    <div class="container">
+        <span class="section-badge">Our Work</span>
+        <h1>Decoration Gallery</h1>
+        <p>See our recent decoration setups across Pune</p>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        {% if gallery %}
+        <div class="gallery-grid">
+            {% for g in gallery %}
+            <div class="gallery-item">
+                <img src="{{ g.image }}" alt="{{ g.caption or 'Party decoration in Pune' }}" loading="lazy">
+                {% if g.caption %}
+                <div class="caption">{{ g.caption }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center; padding:60px 20px;">
+            <div style="font-size:4rem; margin-bottom:16px;">📸</div>
+            <h3>Gallery Coming Soon</h3>
+            <p style="color:var(--gray);">We're uploading our latest work. Check back soon or see our work on WhatsApp!</p>
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20Can%20you%20share%20some%20recent%20work%20photos?" class="btn btn-whatsapp" style="margin-top:16px;">See Work on WhatsApp</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <h2>Want Something Like This?</h2>
+        <p>Tell us your idea and we'll make it happen!</p>
+        <div class="cta-buttons">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20saw%20your%20gallery%20and%20want%20to%20book%20decoration." class="btn btn-primary">💬 Book Now</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

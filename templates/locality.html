@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "PartyBing - {{ locality.name }}",
+    "description": "Party & balloon decoration service in {{ locality.name }}, Pune",
+    "telephone": "+91-9503146681",
+    "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "{{ locality.name }}, Pune",
+        "addressRegion": "Maharashtra",
+        "addressCountry": "IN"
+    },
+    "areaServed": "{{ locality.name }}, Pune",
+    "priceRange": "₹2499 - ₹15000"
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="locality-hero">
+    <div class="container">
+        <span class="section-badge">📍 {{ locality.name }}, Pune</span>
+        <h1>Party & Balloon Decoration in {{ locality.name }}</h1>
+        <p>Professional decoration service at your doorstep in {{ locality.name }}, Pune. Birthday, wedding, anniversary & all event decorations starting ₹2499.</p>
+        <div style="margin-top:24px;">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20need%20decoration%20in%20{{ locality.name }},%20Pune." class="btn btn-whatsapp">💬 Book in {{ locality.name }}</a>
+        </div>
+    </div>
+</section>
+
+<!-- Services Available -->
+<section>
+    <div class="container">
+        <div class="section-header">
+            <h2>Decoration Services in {{ locality.name }}</h2>
+            <p>All our services available with doorstep setup in {{ locality.name }}</p>
+        </div>
+        <div class="services-grid">
+            {% for s in services %}
+            <a href="/services/{{ s.slug }}" class="service-card">
+                <div class="service-card-img">
+                    {% if s.image and '/uploads/' in s.image %}
+                    <img src="{{ s.image }}" alt="{{ s.name }} in {{ locality.name }}" loading="lazy">
+                    {% else %}
+                    <div class="placeholder-img">🎈</div>
+                    {% endif %}
+                </div>
+                <div class="service-card-body">
+                    <h3>{{ s.name }} in {{ locality.name }}</h3>
+                    <p>{{ s.short_desc }}</p>
+                    <div class="service-card-footer">
+                        <span class="service-price">₹{{ s.price }} <small>onwards</small></span>
+                        <span class="btn btn-sm btn-outline">Book →</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Why Book in This Area -->
+<section style="background: var(--light-gray);">
+    <div class="container">
+        <div class="section-header">
+            <h2>Why Choose PartyBing in {{ locality.name }}?</h2>
+        </div>
+        <div class="services-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+            <div class="service-card" style="text-align:center; padding:24px;">
+                <div style="font-size:2.5rem; margin-bottom:10px;">🚗</div>
+                <h3>Quick Delivery</h3>
+                <p>Fast setup in {{ locality.name }}. Our team reaches your location within the promised time.</p>
+            </div>
+            <div class="service-card" style="text-align:center; padding:24px;">
+                <div style="font-size:2.5rem; margin-bottom:10px;">🏠</div>
+                <h3>Home & Venue Setup</h3>
+                <p>We decorate homes, halls, gardens, and any venue in {{ locality.name }}.</p>
+            </div>
+            <div class="service-card" style="text-align:center; padding:24px;">
+                <div style="font-size:2.5rem; margin-bottom:10px;">💯</div>
+                <h3>500+ Events in Pune</h3>
+                <p>Trusted by hundreds of families in {{ locality.name }} and surrounding areas.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Inquiry Form -->
+<section>
+    <div class="container">
+        <div class="contact-grid">
+            <div class="contact-form">
+                <h2>Book Decoration in {{ locality.name }}</h2>
+                <p style="color:var(--gray); margin-bottom:20px;">Fill the form and we'll share a custom quote within 30 minutes.</p>
+                <form class="inquiry-form">
+                    <input type="hidden" name="locality" value="{{ locality.name }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Your Name</label>
+                            <input type="text" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Service Needed</label>
+                            <select name="service">
+                                <option value="">Select Service</option>
+                                {% for s in services %}
+                                <option>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Event Date</label>
+                            <input type="date" name="event_date">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Message (Optional)</label>
+                        <textarea name="message" rows="3" placeholder="Tell us about your event..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Get Free Quote</button>
+                </form>
+            </div>
+            <div class="contact-info-card">
+                <h2>Quick Contact</h2>
+                <div class="contact-info-item">
+                    <span class="icon">💬</span>
+                    <div>
+                        <strong>WhatsApp</strong>
+                        <p><a href="https://wa.me/{{ settings.whatsapp }}" style="color:white;">+91 {{ settings.phone[2:] }}</a></p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">📞</span>
+                    <div>
+                        <strong>Call Us</strong>
+                        <p><a href="tel:+{{ settings.phone }}" style="color:white;">+91 {{ settings.phone[2:] }}</a></p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">📍</span>
+                    <div>
+                        <strong>Location</strong>
+                        <p>{{ settings.address }}</p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">⏰</span>
+                    <div>
+                        <strong>Working Hours</strong>
+                        <p>Mon - Sun: 8 AM - 10 PM</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container">
+        <h2>Book Decoration in {{ locality.name }} Today!</h2>
+        <p>Starting ₹2499. Professional doorstep setup. Same-day booking available!</p>
+        <div class="cta-buttons">
+            <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20need%20decoration%20in%20{{ locality.name }}%20Pune." class="btn btn-primary">💬 WhatsApp Now</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

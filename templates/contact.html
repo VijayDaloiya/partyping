@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="locality-hero">
+    <div class="container">
+        <span class="section-badge">Get In Touch</span>
+        <h1>Contact PartyBing</h1>
+        <p>Book your decoration or get a free custom quote</p>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="contact-grid">
+            <div class="contact-form">
+                <h2>Send Us an Inquiry</h2>
+                <p style="color:var(--gray); margin-bottom:20px;">We'll respond within 30 minutes with a custom quote.</p>
+                <form class="inquiry-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Your Name *</label>
+                            <input type="text" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number *</label>
+                            <input type="tel" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Service Needed</label>
+                            <select name="service">
+                                <option value="">Select Service</option>
+                                {% for s in services %}
+                                <option>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Event Date</label>
+                            <input type="date" name="event_date">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Area in Pune</label>
+                            <select name="locality">
+                                <option value="">Select Area</option>
+                                <option>Wakad</option>
+                                <option>Baner</option>
+                                <option>Hinjewadi</option>
+                                <option>Kothrud</option>
+                                <option>Hadapsar</option>
+                                <option>Viman Nagar</option>
+                                <option>Kharadi</option>
+                                <option>Magarpatta</option>
+                                <option>Pimpri Chinchwad</option>
+                                <option>Aundh</option>
+                                <option>Koregaon Park</option>
+                                <option>Kalyani Nagar</option>
+                                <option>Bavdhan</option>
+                                <option>Ravet</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Budget Range</label>
+                            <select name="message">
+                                <option value="">Select Budget</option>
+                                <option>₹2000 - ₹3000</option>
+                                <option>₹3000 - ₹5000</option>
+                                <option>₹5000 - ₹10000</option>
+                                <option>₹10000+</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Anything Specific?</label>
+                        <textarea name="message" rows="3" placeholder="Describe your theme, colors, or any special requirements..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Send Inquiry</button>
+                </form>
+            </div>
+
+            <div class="contact-info-card">
+                <h2>Quick Contact</h2>
+                <div class="contact-info-item">
+                    <span class="icon">💬</span>
+                    <div>
+                        <strong>WhatsApp (Fastest)</strong>
+                        <p><a href="https://wa.me/{{ settings.whatsapp }}" style="color:white;">+91 {{ settings.phone[2:] }}</a></p>
+                        <p style="font-size:0.8rem; opacity:0.8;">Instant reply</p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">📞</span>
+                    <div>
+                        <strong>Phone</strong>
+                        <p><a href="tel:+{{ settings.phone }}" style="color:white;">+91 {{ settings.phone[2:] }}</a></p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">📧</span>
+                    <div>
+                        <strong>Email</strong>
+                        <p><a href="mailto:{{ settings.email }}" style="color:white;">{{ settings.email }}</a></p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">📍</span>
+                    <div>
+                        <strong>Our Office</strong>
+                        <p>{{ settings.address }}</p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="icon">⏰</span>
+                    <div>
+                        <strong>Working Hours</strong>
+                        <p>Mon - Sun: 8 AM - 10 PM</p>
+                        <p style="font-size:0.8rem; opacity:0.8;">Available 7 days a week</p>
+                    </div>
+                </div>
+                <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20to%20book%20decoration%20in%20Pune." class="btn btn-whatsapp" style="width:100%; justify-content:center; margin-top:20px;">💬 WhatsApp Us Now</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services | PartyBing Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+        .admin-nav { background: #1a1a2e; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .admin-nav h2 { font-size: 1.1rem; }
+        .admin-nav a { color: #aaa; margin-left: 20px; font-size: 0.9rem; text-decoration: none; }
+        .admin-nav a:hover { color: white; }
+        .admin-nav a.active { color: #e91e63; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .service-edit { background: white; padding: 24px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .service-edit h3 { margin-bottom: 12px; color: #e91e63; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        label { font-size: 0.8rem; color: #666; font-weight: 500; display: block; margin-bottom: 4px; }
+        input, textarea, select { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 0.9rem; font-family: inherit; }
+        textarea { resize: vertical; }
+        .btn { padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+        .btn-save { background: #e91e63; color: white; }
+        .btn-save:hover { background: #c2185b; }
+        .full-width { grid-column: 1 / -1; }
+        .toggle { display: flex; align-items: center; gap: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <h2>🎈 PartyBing Admin</h2>
+        <div>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/services" class="active">Services</a>
+            <a href="/admin/gallery">Gallery</a>
+            <a href="/admin/testimonials">Testimonials</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/admin/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 style="margin-bottom:20px;">Manage Services</h2>
+
+        {% for s in services %}
+        <div class="service-edit">
+            <h3>{{ s.name }}</h3>
+            <form method="POST" action="/admin/services/{{ s.id }}/update">
+                <div class="form-grid">
+                    <div>
+                        <label>Name</label>
+                        <input type="text" name="name" value="{{ s.name }}">
+                    </div>
+                    <div>
+                        <label>Price (₹)</label>
+                        <input type="number" name="price" value="{{ s.price }}">
+                    </div>
+                    <div class="full-width">
+                        <label>Short Description</label>
+                        <input type="text" name="short_desc" value="{{ s.short_desc or '' }}">
+                    </div>
+                    <div class="full-width">
+                        <label>Full Description</label>
+                        <textarea name="description" rows="3">{{ s.description or '' }}</textarea>
+                    </div>
+                    <div>
+                        <label>Meta Title (SEO)</label>
+                        <input type="text" name="meta_title" value="{{ s.meta_title or '' }}">
+                    </div>
+                    <div>
+                        <label>Meta Description (SEO)</label>
+                        <input type="text" name="meta_description" value="{{ s.meta_description or '' }}">
+                    </div>
+                    <div>
+                        <label>Display Order</label>
+                        <input type="number" name="display_order" value="{{ s.display_order or 0 }}">
+                    </div>
+                    <div class="toggle">
+                        <input type="checkbox" name="is_active" id="active_{{ s.id }}" {% if s.is_active %}checked{% endif %}>
+                        <label for="active_{{ s.id }}" style="margin:0;">Active</label>
+                    </div>
+                    <div class="full-width">
+                        <label>FAQ (JSON: [{"q":"question","a":"answer"}])</label>
+                        <textarea name="faq" rows="2">{{ s.faq or '' }}</textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-save" style="margin-top:12px;">Save Changes</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | PartyBing</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 400px; }
+        h1 { text-align: center; margin-bottom: 8px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 24px; }
+        input { width: 100%; padding: 12px 16px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 1rem; margin-bottom: 16px; }
+        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #e91e63, #7c4dff); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+        .error { color: #e91e63; text-align: center; margin-bottom: 12px; font-size: 0.9rem; }
+        link { rel: "preconnect"; href: "https://fonts.googleapis.com"; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-box">
+        <h1>🎈 PartyBing</h1>
+        <p class="subtitle">Admin Panel</p>
+        {% if request.query_params.get('error') %}
+        <p class="error">Incorrect password. Try again.</p>
+        {% endif %}
+        <form method="POST" action="/admin/login">
+            <input type="password" name="password" placeholder="Enter admin password" required autofocus>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html>
