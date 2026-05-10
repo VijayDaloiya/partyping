@@ -50,13 +50,25 @@
             <p>From intimate birthday surprises to grand wedding setups, we make every event special</p>
         </div>
         <div class="services-grid">
+            {% set service_icons = {
+                'birthday-decoration': '🎂',
+                'balloon-decoration': '🎈',
+                'anniversary-decoration': '💕',
+                'baby-shower-decoration': '👶',
+                'wedding-decoration': '💒',
+                'haldi-decoration': '🌼',
+                'naming-ceremony': '🍼',
+                'corporate-events': '🏢',
+                'ring-ceremony': '💍',
+                'kids-party': '🎪'
+            } %}
             {% for s in services %}
             <a href="/services/{{ s.slug }}" class="service-card">
                 <div class="service-card-img">
                     {% if s.image and '/uploads/' in s.image %}
                     <img src="{{ s.image }}" alt="{{ s.name }} in Pune" loading="lazy">
                     {% else %}
-                    <div class="placeholder-img">🎈</div>
+                    <div class="placeholder-img">{{ service_icons.get(s.slug, '🎉') }}</div>
                     {% endif %}
                 </div>
                 <div class="service-card-body">
