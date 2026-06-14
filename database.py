@@ -1,5 +1,7 @@
 import sqlite3
 import os
+import re
+import uuid
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "partybing.db")
 
@@ -7,6 +9,74 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+def _table_columns(cursor, table_name):
+    rows = cursor.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return {row[1] for row in rows}
+
+def _ensure_gallery_columns(cursor):
+    columns = _table_columns(cursor, "gallery")
+    if "price" not in columns:
+        cursor.execute("ALTER TABLE gallery ADD COLUMN price INTEGER")
+    if "discount_price" not in columns:
+        cursor.execute("ALTER TABLE gallery ADD COLUMN discount_price INTEGER")
+    if "code" not in columns:
+        cursor.execute("ALTER TABLE gallery ADD COLUMN code TEXT")
+
+def _ensure_gallery_code_index(cursor):
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_gallery_code ON gallery(code)")
+
+def _ensure_gallery_images_table(cursor):
+    cursor.execute("""CREATE TABLE IF NOT EXISTS gallery_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        gallery_id INTEGER NOT NULL,
+        image TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (gallery_id) REFERENCES gallery(id) ON DELETE CASCADE
+    )""")
+
+def _normalize_code(value):
+    text = (value or "").strip().upper()
+    text = re.sub(r"[^A-Z0-9]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
+    return text
+
+def _unique_gallery_code(cursor, desired, gallery_id=None):
+    base = _normalize_code(desired) or f"PBG-{uuid.uuid4().hex[:8].upper()}"
+    candidate = base
+    suffix = 2
+    while True:
+        row = cursor.execute("SELECT id FROM gallery WHERE code=?", (candidate,)).fetchone()
+        if not row or (gallery_id is not None and row[0] == gallery_id):
+            return candidate
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+
+def _backfill_gallery_columns(cursor):
+    default_price_row = cursor.execute(
+        "SELECT value FROM settings WHERE key='default_price'"
+    ).fetchone()
+    default_price = int(default_price_row[0]) if default_price_row and default_price_row[0] else 2499
+    service_prices = {
+        row[0]: row[1]
+        for row in cursor.execute("SELECT id, price FROM services").fetchall()
+    }
+    gallery_rows = cursor.execute("SELECT id, service_id, price, discount_price, code FROM gallery").fetchall()
+    for row in gallery_rows:
+        row_id = row[0]
+        service_id = row[1]
+        current_price = row[2]
+        current_discount = row[3]
+        current_code = row[4]
+        fallback_price = service_prices.get(service_id, default_price)
+        price = current_price if current_price not in (None, 0, "") else fallback_price
+        discount_price = current_discount if current_discount not in (None, 0, "") else price
+        code = _unique_gallery_code(cursor, current_code or f"PBG-{row_id:05d}", gallery_id=row_id)
+        cursor.execute(
+            "UPDATE gallery SET price=?, discount_price=?, code=? WHERE id=?",
+            (price, discount_price, code, row_id),
+        )
 
 def init_db():
     conn = get_db()
@@ -63,10 +133,14 @@ def init_db():
         image TEXT NOT NULL,
         caption TEXT,
         service_id INTEGER,
+        price INTEGER,
+        discount_price INTEGER,
+        code TEXT,
         display_order INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (service_id) REFERENCES services(id)
     )""")
+    _ensure_gallery_images_table(c)
 
     c.execute("""CREATE TABLE IF NOT EXISTS testimonials (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,6 +165,8 @@ def init_db():
     )""")
 
     conn.commit()
+
+    _ensure_gallery_columns(c)
 
     # Seed default settings
     defaults = {
@@ -481,6 +557,9 @@ def init_db():
 
     for t in testimonials:
         c.execute("INSERT OR IGNORE INTO testimonials (name, text, rating, service) VALUES (?, ?, ?, ?)", t)
+
+    _backfill_gallery_columns(c)
+    _ensure_gallery_code_index(c)
 
     conn.commit()
     conn.close()

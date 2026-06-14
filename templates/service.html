@@ -80,9 +80,26 @@
                 <h2 style="margin-top:30px;">Our Work</h2>
                 <div class="gallery-grid" style="margin-top:12px;">
                     {% for g in gallery %}
-                    <div class="gallery-item">
+                    <a class="gallery-item" href="/gallery/{{ g.code }}" style="display:block;">
                         <img src="{{ g.image }}" alt="{{ g.caption or service.name }}" loading="lazy">
-                    </div>
+                        <div class="gallery-overlay">
+                            {% if g.caption %}
+                            <div class="gallery-caption">{{ g.caption }}</div>
+                            {% endif %}
+                            <div class="gallery-meta">
+                                {% if g.code %}
+                                <span class="gallery-pill">Code: {{ g.code }}</span>
+                                {% endif %}
+                                <span class="gallery-pill gallery-price">
+                                    {% if g.discount_price and g.discount_price < g.price %}
+                                    <del>₹{{ g.price }}</del> ₹{{ g.discount_price }}
+                                    {% else %}
+                                    ₹{{ g.price or 0 }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% endif %}

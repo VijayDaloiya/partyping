@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="locality-hero">
+    <div class="container">
+        <span class="section-badge">{{ item.service_name or 'Gallery Item' }}</span>
+        <h1>{{ item.caption or item.code }}</h1>
+        <p>Code: {{ item.code }} · {% if item.discount_price and item.discount_price < item.price %}<del>₹{{ item.price }}</del> ₹{{ item.discount_price }}{% else %}₹{{ item.price or 0 }}{% endif %}</p>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="service-content" style="grid-template-columns: 1.3fr 0.7fr;">
+            <div class="service-description">
+                <div class="gallery-detail-main" style="border-radius:16px; overflow:hidden; background:var(--light-gray);">
+                    <img id="galleryMainImage" src="{{ item.image }}" alt="{{ item.caption or item.code }}" style="width:100%; max-height:560px; object-fit:cover;">
+                </div>
+                {% if images %}
+                <h2 style="margin-top:28px;">More Images</h2>
+                <div class="gallery-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); margin-top:12px;">
+                    <button type="button" class="gallery-item" style="border:0; padding:0; cursor:pointer;" onclick="document.getElementById('galleryMainImage').src='{{ item.image }}'">
+                        <img src="{{ item.image }}" alt="{{ item.caption or item.code }}" loading="lazy">
+                    </button>
+                    {% for image in images %}
+                    <button type="button" class="gallery-item" style="border:0; padding:0; cursor:pointer;" onclick="document.getElementById('galleryMainImage').src='{{ image.image }}'">
+                        <img src="{{ image.image }}" alt="{{ item.caption or item.code }}" loading="lazy">
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="service-sidebar">
+                <h3>📦 Product Details</h3>
+                <p style="color:var(--gray); font-size:0.92rem; margin-bottom:12px;">Unique code: <strong>{{ item.code }}</strong></p>
+                <p style="color:var(--gray); font-size:0.92rem; margin-bottom:12px;">Service: <strong>{{ item.service_name or 'General' }}</strong></p>
+                <p style="color:var(--gray); font-size:0.92rem; margin-bottom:20px;">
+                    Price:
+                    {% if item.discount_price and item.discount_price < item.price %}
+                    <del>₹{{ item.price }}</del> <strong>₹{{ item.discount_price }}</strong>
+                    {% else %}
+                    <strong>₹{{ item.price or 0 }}</strong>
+                    {% endif %}
+                </p>
+                <a href="https://wa.me/{{ settings.whatsapp }}?text=Hi!%20I%20want%20to%20book%20{{ item.code }}%20in%20Pune." class="btn btn-whatsapp" style="width:100%; justify-content:center; margin-bottom:12px;">💬 Book This Item</a>
+                <a href="/gallery" class="btn btn-outline" style="width:100%; justify-content:center;">Back to Gallery</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

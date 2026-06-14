@@ -28,6 +28,12 @@
         .gallery-item img { width: 100%; height: 150px; object-fit: cover; }
         .gallery-item-info { padding: 12px; }
         .gallery-item-info p { font-size: 0.8rem; color: #666; margin-bottom: 8px; }
+        .meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .meta-badge { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #f5f5f5; color: #444; font-size: 0.72rem; font-weight: 600; }
+        .price-line { font-size: 0.82rem; color: #444; margin-bottom: 6px; }
+        .price-line del { color: #999; margin-right: 6px; }
+        .gallery-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-link { background: #f5f5f5; color: #1a1a2e; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -49,12 +55,28 @@
             <form method="POST" action="/admin/gallery/upload" enctype="multipart/form-data">
                 <div class="form-row">
                     <div>
-                        <label>Image File</label>
-                        <input type="file" name="image" accept="image/*" required>
+                        <label>Thumbnail Image</label>
+                        <input type="file" name="thumbnail_image" accept="image/*" required>
+                    </div>
+                    <div>
+                        <label>Extra Images</label>
+                        <input type="file" name="extra_images" accept="image/*" multiple>
                     </div>
                     <div>
                         <label>Caption</label>
                         <input type="text" name="caption" placeholder="e.g. Birthday decoration in Wakad">
+                    </div>
+                    <div>
+                        <label>Price</label>
+                        <input type="number" name="price" min="0" step="1" placeholder="e.g. 2499" required>
+                    </div>
+                    <div>
+                        <label>Discount Price</label>
+                        <input type="number" name="discount_price" min="0" step="1" placeholder="e.g. 1999">
+                    </div>
+                    <div>
+                        <label>Product Code</label>
+                        <input type="text" name="code" placeholder="e.g. PBG-0001" required>
                     </div>
                     <div>
                         <label>Service</label>
@@ -79,7 +101,22 @@
                 <img src="{{ g.image }}" alt="{{ g.caption }}">
                 <div class="gallery-item-info">
                     <p>{{ g.caption or 'No caption' }}</p>
-                    <p>{{ g.service_name or 'General' }}</p>
+                    <div class="meta-row">
+                        <span class="meta-badge">{{ g.service_name or 'General' }}</span>
+                        <span class="meta-badge">Code: {{ g.code or '—' }}</span>
+                        <span class="meta-badge">{{ (g.extra_images or 0) + 1 }} images</span>
+                    </div>
+                    <div class="price-line">
+                        {% if g.discount_price and g.discount_price < g.price %}
+                        <del>₹{{ g.price }}</del> <strong>₹{{ g.discount_price }}</strong>
+                        {% else %}
+                        <strong>₹{{ g.price or 0 }}</strong>
+                        {% endif %}
+                    </div>
+                    <div class="gallery-actions" style="margin-bottom:10px;">
+                        <a class="btn btn-link btn-sm" href="/admin/gallery/{{ g.id }}">Edit</a>
+                        <a class="btn btn-link btn-sm" href="/gallery/{{ g.code }}" target="_blank">View</a>
+                    </div>
                     <form method="POST" action="/admin/gallery/{{ g.id }}/delete">
                         <button type="submit" class="btn btn-delete" onclick="return confirm('Delete this image?')">Delete</button>
                     </form>

@@ -160,6 +160,20 @@ section { padding: 70px 0; }
     background: linear-gradient(transparent, rgba(0,0,0,0.7));
     color: white; padding: 20px 12px 12px; font-size: 0.85rem;
 }
+.gallery-item .gallery-overlay {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.82));
+    color: white; padding: 18px 12px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+}
+.gallery-item .gallery-caption { font-size: 0.85rem; font-weight: 600; line-height: 1.35; }
+.gallery-item .gallery-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.gallery-item .gallery-pill {
+    display: inline-block; padding: 3px 8px; border-radius: 999px;
+    background: rgba(255,255,255,0.18); font-size: 0.7rem; font-weight: 600;
+    backdrop-filter: blur(2px);
+}
+.gallery-item .gallery-price del { opacity: 0.8; margin-right: 4px; }
 
 /* ===== SERVICE PAGE ===== */
 .service-hero { background: var(--primary-light); padding: 50px 0; }

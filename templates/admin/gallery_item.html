@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Gallery Item | PartyBing Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+        .admin-nav { background: #1a1a2e; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .admin-nav h2 { font-size: 1.1rem; }
+        .admin-nav a { color: #aaa; margin-left: 20px; font-size: 0.9rem; text-decoration: none; }
+        .admin-nav a:hover { color: white; }
+        .admin-nav a.active { color: #e91e63; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .panel { background: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .form-row > div { flex: 1; min-width: 180px; }
+        label { font-size: 0.8rem; color: #666; font-weight: 500; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 0.9rem; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; display: inline-block; text-decoration: none; }
+        .btn-save { background: #e91e63; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .btn-link { background: #f5f5f5; color: #1a1a2e; }
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+        .image-card { background: #fafafa; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
+        .image-card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+        .image-card .body { padding: 10px; }
+        .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; color: #666; font-size: 0.85rem; }
+        .badge { padding: 4px 8px; background: #f5f5f5; border-radius: 999px; font-size: 0.75rem; }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <h2>🎈 PartyBing Admin</h2>
+        <div>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/services">Services</a>
+            <a href="/admin/gallery" class="active">Gallery</a>
+            <a href="/admin/testimonials">Testimonials</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/admin/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="panel">
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; margin-bottom:16px;">
+                <div>
+                    <h2>{{ item.caption or 'Untitled Gallery Item' }}</h2>
+                    <div class="meta">
+                        <span class="badge">Code: {{ item.code }}</span>
+                        <span class="badge">{{ item.service_name or 'General' }}</span>
+                        <span class="badge">Price: ₹{{ item.price or 0 }}</span>
+                        <span class="badge">Discount: ₹{{ item.discount_price or item.price or 0 }}</span>
+                    </div>
+                </div>
+                <div class="actions">
+                    <a class="btn btn-link" href="/gallery/{{ item.code }}" target="_blank">Open Public Page</a>
+                    <a class="btn btn-link" href="/admin/gallery">Back</a>
+                </div>
+            </div>
+
+            <form method="POST" action="/admin/gallery/{{ item.id }}/update" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div>
+                        <label>Caption</label>
+                        <input type="text" name="caption" value="{{ item.caption or '' }}">
+                    </div>
+                    <div>
+                        <label>Code</label>
+                        <input type="text" name="code" value="{{ item.code or '' }}" required>
+                    </div>
+                    <div>
+                        <label>Price</label>
+                        <input type="number" name="price" min="0" step="1" value="{{ item.price or '' }}">
+                    </div>
+                    <div>
+                        <label>Discount Price</label>
+                        <input type="number" name="discount_price" min="0" step="1" value="{{ item.discount_price or '' }}">
+                    </div>
+                    <div>
+                        <label>Service</label>
+                        <select name="service_id">
+                            <option value="0">General</option>
+                            {% for s in services %}
+                            <option value="{{ s.id }}" {% if item.service_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Replace Thumbnail</label>
+                        <input type="file" name="thumbnail_image" accept="image/*">
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-save">Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-bottom:14px;">Related Images</h3>
+            <form method="POST" action="/admin/gallery/{{ item.id }}/images/add" enctype="multipart/form-data" style="margin-bottom:18px;">
+                <div class="form-row">
+                    <div>
+                        <label>Add More Images</label>
+                        <input type="file" name="images" accept="image/*" multiple>
+                    </div>
+                    <div style="align-self:flex-end;">
+                        <button type="submit" class="btn btn-save">Upload More</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="image-grid">
+                <div class="image-card">
+                    <img src="{{ item.image }}" alt="{{ item.caption or item.code }}">
+                    <div class="body">
+                        <div class="badge" style="margin-bottom:10px;">Thumbnail</div>
+                        <div class="actions">
+                            <a class="btn btn-link" href="{{ item.image }}" target="_blank">View</a>
+                        </div>
+                    </div>
+                </div>
+                {% for image in images %}
+                <div class="image-card">
+                    <img src="{{ image.image }}" alt="{{ item.caption or item.code }}">
+                    <div class="body">
+                        <div class="badge" style="margin-bottom:10px;">Image {{ loop.index }}</div>
+                        <div class="actions">
+                            <a class="btn btn-link" href="{{ image.image }}" target="_blank">View</a>
+                            <form method="POST" action="/admin/gallery/images/{{ image.id }}/delete" onsubmit="return confirm('Delete this image?')">
+                                <button type="submit" class="btn btn-delete">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-bottom:12px;">Delete Item</h3>
+            <form method="POST" action="/admin/gallery/{{ item.id }}/delete" onsubmit="return confirm('Delete this gallery item and all images?')">
+                <button type="submit" class="btn btn-delete">Delete Entire Item</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

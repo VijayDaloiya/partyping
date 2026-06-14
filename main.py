@@ -3,8 +3,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.gzip import GZipMiddleware
-from database import init_db, get_db, get_all_settings, get_setting
+from database import init_db, get_db, get_all_settings, get_setting, _unique_gallery_code
 import os, json, shutil, uuid
+from typing import Optional, List
 from datetime import datetime
 from functools import lru_cache
 from PIL import Image
@@ -62,6 +63,32 @@ def optimize_image(filepath, max_width=1200, quality=80):
         return webp_path
     except Exception:
         return filepath
+
+def _safe_int_field(value, fallback):
+    try:
+        text = value.strip()
+        return int(text) if text else fallback
+    except (AttributeError, ValueError):
+        return fallback
+
+def _save_uploaded_image(upload: UploadFile):
+    ext = os.path.splitext(upload.filename or "")[1].lower() or ".jpg"
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join("uploads", filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(upload.file, f)
+    optimize_image(filepath)
+    return f"/uploads/{filename}", filepath
+
+def _remove_uploaded_image(image_path: Optional[str]):
+    if not image_path or not image_path.startswith("/uploads/"):
+        return
+    physical = image_path.lstrip("/")
+    if os.path.exists(physical):
+        os.remove(physical)
+    webp_path = physical.rsplit(".", 1)[0] + ".webp"
+    if os.path.exists(webp_path):
+        os.remove(webp_path)
 
 
 def common_context():
@@ -129,13 +156,45 @@ async def locality_page(request: Request, slug: str):
 @app.get("/gallery", response_class=HTMLResponse)
 async def gallery_page(request: Request):
     conn = get_db()
-    gallery = conn.execute("SELECT g.*, s.name as service_name FROM gallery g LEFT JOIN services s ON g.service_id=s.id ORDER BY g.display_order, g.id DESC").fetchall()
+    gallery = conn.execute("""
+        SELECT g.*, s.name as service_name,
+            (SELECT COUNT(*) FROM gallery_images gi WHERE gi.gallery_id=g.id) as extra_images
+        FROM gallery g
+        LEFT JOIN services s ON g.service_id=s.id
+        ORDER BY g.display_order, g.id DESC
+    """).fetchall()
     conn.close()
     ctx = common_context()
     return templates.TemplateResponse(request, "gallery.html", context={
         **ctx, "gallery": gallery,
         "meta_title": "Our Work Gallery | PartyBing Pune Decoration",
         "meta_description": "See our latest decoration work - birthday parties, balloon arches, wedding setups, baby showers and more in Pune.",
+    })
+
+@app.get("/gallery/{code}", response_class=HTMLResponse)
+async def gallery_detail(request: Request, code: str):
+    conn = get_db()
+    item = conn.execute("""
+        SELECT g.*, s.name as service_name
+        FROM gallery g
+        LEFT JOIN services s ON g.service_id=s.id
+        WHERE g.code=?
+    """, (code,)).fetchone()
+    if not item:
+        conn.close()
+        raise HTTPException(status_code=404)
+    images = conn.execute(
+        "SELECT * FROM gallery_images WHERE gallery_id=? ORDER BY display_order, id",
+        (item["id"],)
+    ).fetchall()
+    conn.close()
+    ctx = common_context()
+    return templates.TemplateResponse(request, "gallery_detail.html", context={
+        **ctx,
+        "item": item,
+        "images": images,
+        "meta_title": item["caption"] or f"{item['service_name'] or 'Gallery'} | PartyBing",
+        "meta_description": item["caption"] or "PartyBing gallery item",
     })
 
 
@@ -201,12 +260,14 @@ async def sitemap(request: Request):
     services = conn.execute("SELECT slug FROM services WHERE is_active=1").fetchall()
     localities = conn.execute("SELECT slug FROM localities WHERE is_active=1").fetchall()
     blog_posts = conn.execute("SELECT slug FROM blog_posts WHERE is_published=1").fetchall()
+    gallery_items = conn.execute("SELECT code FROM gallery WHERE code IS NOT NULL AND code != ''").fetchall()
     conn.close()
     base = "https://partybing.in"
     urls = [base + "/", base + "/gallery", base + "/contact", base + "/blog"]
     urls += [f"{base}/services/{s['slug']}" for s in services]
     urls += [f"{base}/area/{l['slug']}" for l in localities]
     urls += [f"{base}/blog/{p['slug']}" for p in blog_posts]
+    urls += [f"{base}/gallery/{g['code']}" for g in gallery_items]
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -287,32 +348,161 @@ async def admin_update_service(request: Request, service_id: int):
 async def admin_gallery(request: Request):
     verify_admin(request)
     conn = get_db()
-    gallery = conn.execute("SELECT g.*, s.name as service_name FROM gallery g LEFT JOIN services s ON g.service_id=s.id ORDER BY g.id DESC").fetchall()
+    gallery = conn.execute("""
+        SELECT g.*, s.name as service_name,
+            (SELECT COUNT(*) FROM gallery_images gi WHERE gi.gallery_id=g.id) as extra_images
+        FROM gallery g
+        LEFT JOIN services s ON g.service_id=s.id
+        ORDER BY g.id DESC
+    """).fetchall()
     services = conn.execute("SELECT id, name FROM services ORDER BY name").fetchall()
     conn.close()
     return templates.TemplateResponse(request, "admin/gallery.html", context={"gallery": gallery, "services": services})
 
 @app.post("/admin/gallery/upload")
-async def admin_upload_image(request: Request, image: UploadFile = File(...), caption: str = Form(""), service_id: int = Form(0)):
+async def admin_upload_image(
+    request: Request,
+    thumbnail_image: UploadFile = File(...),
+    extra_images: List[UploadFile] = File([]),
+    caption: str = Form(""),
+    service_id: int = Form(0),
+    price: str = Form(""),
+    discount_price: str = Form(""),
+    code: str = Form("")
+):
     verify_admin(request)
-    ext = os.path.splitext(image.filename)[1].lower()
-    filename = f"{uuid.uuid4().hex}{ext}"
-    filepath = f"uploads/{filename}"
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(image.file, f)
-    # Optimize image (compress + create webp)
-    optimize_image(filepath)
+    default_price = int(get_setting("default_price") or 2499)
+    final_price = _safe_int_field(price, default_price)
+    final_discount_price = _safe_int_field(discount_price, final_price)
+    if final_discount_price <= 0 or final_discount_price > final_price:
+        final_discount_price = final_price
     conn = get_db()
-    conn.execute("INSERT INTO gallery (image, caption, service_id) VALUES (?,?,?)",
-                 (f"/uploads/{filename}", caption, service_id if service_id else None))
+    final_code = _unique_gallery_code(conn.cursor(), code)
+    thumbnail_path, _ = _save_uploaded_image(thumbnail_image)
+    conn.execute(
+        "INSERT INTO gallery (image, caption, service_id, price, discount_price, code) VALUES (?,?,?,?,?,?)",
+        (thumbnail_path, caption, service_id if service_id else None, final_price, final_discount_price, final_code)
+    )
+    gallery_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    for order, extra_image in enumerate([image for image in extra_images if getattr(image, "filename", "")], start=1):
+        extra_path, _ = _save_uploaded_image(extra_image)
+        conn.execute(
+            "INSERT INTO gallery_images (gallery_id, image, display_order) VALUES (?,?,?)",
+            (gallery_id, extra_path, order)
+        )
     conn.commit()
     conn.close()
     return RedirectResponse("/admin/gallery", status_code=302)
+
+@app.get("/admin/gallery/{item_id}", response_class=HTMLResponse)
+async def admin_gallery_item(request: Request, item_id: int):
+    verify_admin(request)
+    conn = get_db()
+    item = conn.execute("""
+        SELECT g.*, s.name as service_name
+        FROM gallery g
+        LEFT JOIN services s ON g.service_id=s.id
+        WHERE g.id=?
+    """, (item_id,)).fetchone()
+    if not item:
+        conn.close()
+        raise HTTPException(status_code=404)
+    images = conn.execute(
+        "SELECT * FROM gallery_images WHERE gallery_id=? ORDER BY display_order, id",
+        (item_id,)
+    ).fetchall()
+    services = conn.execute("SELECT id, name FROM services ORDER BY name").fetchall()
+    conn.close()
+    return templates.TemplateResponse(request, "admin/gallery_item.html", context={
+        "item": item,
+        "images": images,
+        "services": services,
+    })
+
+@app.post("/admin/gallery/{item_id}/update")
+async def admin_update_gallery_item(
+    request: Request,
+    item_id: int,
+    thumbnail_image: Optional[UploadFile] = File(None),
+):
+    verify_admin(request)
+    form = await request.form()
+    conn = get_db()
+    item = conn.execute("SELECT * FROM gallery WHERE id=?", (item_id,)).fetchone()
+    if not item:
+        conn.close()
+        raise HTTPException(status_code=404)
+    new_code = _unique_gallery_code(conn.cursor(), form.get("code"), item_id=item_id)
+    image_path = item["image"]
+    if thumbnail_image and getattr(thumbnail_image, "filename", ""):
+        _remove_uploaded_image(item["image"])
+        image_path, _ = _save_uploaded_image(thumbnail_image)
+    conn.execute("""
+        UPDATE gallery
+        SET image=?, caption=?, service_id=?, price=?, discount_price=?, code=?
+        WHERE id=?
+    """, (
+        image_path,
+        form.get("caption", ""),
+        int(form.get("service_id", 0)) or None,
+        _safe_int_field(form.get("price", ""), int(get_setting("default_price") or 2499)),
+        _safe_int_field(form.get("discount_price", ""), _safe_int_field(form.get("price", ""), int(get_setting("default_price") or 2499))),
+        new_code,
+        item_id
+    ))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/admin/gallery/{item_id}", status_code=302)
+
+@app.post("/admin/gallery/{item_id}/images/add")
+async def admin_add_gallery_images(request: Request, item_id: int, images: List[UploadFile] = File([])):
+    verify_admin(request)
+    conn = get_db()
+    item = conn.execute("SELECT id FROM gallery WHERE id=?", (item_id,)).fetchone()
+    if not item:
+        conn.close()
+        raise HTTPException(status_code=404)
+    current_max = conn.execute(
+        "SELECT COALESCE(MAX(display_order), 0) FROM gallery_images WHERE gallery_id=?",
+        (item_id,)
+    ).fetchone()[0]
+    order = current_max + 1
+    for upload in images:
+        if getattr(upload, "filename", ""):
+            image_path, _ = _save_uploaded_image(upload)
+            conn.execute(
+                "INSERT INTO gallery_images (gallery_id, image, display_order) VALUES (?,?,?)",
+                (item_id, image_path, order)
+            )
+            order += 1
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/admin/gallery/{item_id}", status_code=302)
+
+@app.post("/admin/gallery/images/{image_id}/delete")
+async def admin_delete_gallery_image(request: Request, image_id: int):
+    verify_admin(request)
+    conn = get_db()
+    row = conn.execute("SELECT * FROM gallery_images WHERE id=?", (image_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404)
+    _remove_uploaded_image(row["image"])
+    conn.execute("DELETE FROM gallery_images WHERE id=?", (image_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(request.headers.get("referer", "/admin/gallery"), status_code=302)
 
 @app.post("/admin/gallery/{item_id}/delete")
 async def admin_delete_gallery(request: Request, item_id: int):
     verify_admin(request)
     conn = get_db()
+    row = conn.execute("SELECT * FROM gallery WHERE id=?", (item_id,)).fetchone()
+    child_rows = conn.execute("SELECT * FROM gallery_images WHERE gallery_id=? ORDER BY id", (item_id,)).fetchall()
+    if row:
+        _remove_uploaded_image(row["image"])
+    for child in child_rows:
+        _remove_uploaded_image(child["image"])
     conn.execute("DELETE FROM gallery WHERE id=?", (item_id,))
     conn.commit()
     conn.close()
