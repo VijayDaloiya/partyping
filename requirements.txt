@@ -4,4 +4,3 @@ jinja2
 python-multipart
 aiofiles
 pillow
-psycopg[binary]
