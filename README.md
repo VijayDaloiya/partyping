@@ -1,4 +1,4 @@
-# PartyBing - Pune's Party & Balloon Decoration Service
+# PartyBing - Chandigarh's Party & Balloon Decoration Service
 
 ## Live URL
 https://partybing.in
@@ -7,8 +7,16 @@ https://partybing.in
 - URL: https://partybing.in/admin
 - Password: `partybing@2026`
 
+## Vercel Free Deploy
+This project can run on Vercel Free with:
+- `DATABASE_URL` pointing to a free Postgres provider added through Vercel Marketplace
+- `BLOB_READ_WRITE_TOKEN` from a Vercel Blob store
+
+The app keeps a local SQLite fallback for development, but Vercel deployment should use the Postgres + Blob setup.
+If you deploy with Vercel, create the Blob store and database in the Vercel dashboard so the environment variables are injected automatically.
+
 ## Tech Stack
-- **Backend:** Python FastAPI + SQLite
+- **Backend:** Python FastAPI + SQLite local fallback / Postgres on Vercel
 - **Frontend:** HTML/CSS/JS (Jinja2 templates, no framework)
 - **Server:** EC2 (Amazon Linux, Mumbai region) + Nginx + SSL (Let's Encrypt)
 - **Port:** 8002 (behind Nginx reverse proxy)
@@ -73,7 +81,7 @@ wakad, baner, hinjewadi, kothrud, hadapsar, viman-nagar, kharadi, magarpatta, pi
 - LocalBusiness schema on every page
 - Service schema on service pages
 - FAQPage schema (homepage + service pages)
-- Meta titles & descriptions (keyword-optimized for Pune)
+- Meta titles & descriptions (keyword-optimized for Chandigarh)
 - Canonical URLs
 - Open Graph meta tags
 - XML sitemap (33 URLs)
@@ -106,5 +114,5 @@ wakad, baner, hinjewadi, kothrud, hadapsar, viman-nagar, kharadi, magarpatta, pi
 - **Name:** PartyBing
 - **Phone/WhatsApp:** +91 9503146681
 - **Email:** partybing0008@gmail.com
-- **Address:** Shop No. 4, Pristic Arcade, Wakad, Pimpri-Chinchwad, Pune 411057
+- **Address:** Shop No. 55/1, New Swaraj Nagar Mundi Kharar, Dist, Tehsil, Kharar, Sahibzada Ajit Singh Nagar, Punjab 140301
 - **Default Price:** ₹2499

@@ -1,0 +1,8 @@
+{
+  "name": "partybing",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/blob": "^1.1.0"
+  }
+}
