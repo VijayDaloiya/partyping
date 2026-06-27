@@ -1,40 +1,138 @@
-import sqlite3
 import os
 import re
+import sqlite3
 import uuid
 
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except Exception:
+    psycopg = None
+    dict_row = None
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "partybing.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+
+def _is_postgres():
+    return bool(DATABASE_URL and psycopg is not None)
+
+
+def _translate_sql(sql):
+    if not _is_postgres():
+        return sql
+
+    normalized = sql.strip()
+    if normalized.upper().startswith("INSERT OR IGNORE INTO"):
+        match = re.match(r"(?is)^\s*INSERT OR IGNORE INTO\s+(.*?)\s+VALUES\s*(\(.*\))\s*$", sql)
+        if match:
+            sql = f"INSERT INTO {match.group(1)} VALUES {match.group(2)} ON CONFLICT DO NOTHING"
+    elif normalized.upper().startswith("INSERT OR REPLACE INTO SETTINGS"):
+        match = re.match(r"(?is)^\s*INSERT OR REPLACE INTO\s+settings\s*\((.*?)\)\s+VALUES\s*(\(.*\))\s*$", sql)
+        if match:
+            sql = f"INSERT INTO settings ({match.group(1)}) VALUES {match.group(2)} ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
+    return sql.replace("?", "%s")
+
+
+class _RowProxy(dict):
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super().__getitem__(key)
+
+
+class _CursorProxy:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, sql, params=None):
+        self._cursor.execute(_translate_sql(sql), params or ())
+        return self
+
+    def fetchone(self):
+        row = self._cursor.fetchone()
+        return _RowProxy(row) if isinstance(row, dict) else row
+
+    def fetchall(self):
+        rows = self._cursor.fetchall()
+        return [_RowProxy(row) if isinstance(row, dict) else row for row in rows]
+
+
+class _ConnectionProxy:
+    def __init__(self, connection):
+        self._connection = connection
+
+    def cursor(self):
+        return _CursorProxy(self._connection.cursor(row_factory=dict_row))
+
+    def execute(self, sql, params=None):
+        cursor = self.cursor()
+        cursor.execute(sql, params)
+        return cursor
+
+    def commit(self):
+        self._connection.commit()
+
+    def close(self):
+        self._connection.close()
+
+
+def _create_table(cursor, sqlite_sql, postgres_sql):
+    cursor.execute(postgres_sql if _is_postgres() else sqlite_sql)
 
 def get_db():
+    if _is_postgres():
+        return _ConnectionProxy(psycopg.connect(DATABASE_URL))
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def _table_columns(cursor, table_name):
+    if _is_postgres():
+        rows = cursor.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema='public' AND table_name=?
+            ORDER BY ordinal_position
+            """,
+            (table_name,)
+        ).fetchall()
+        return {row["column_name"] for row in rows}
     rows = cursor.execute(f"PRAGMA table_info({table_name})").fetchall()
     return {row[1] for row in rows}
 
 def _ensure_gallery_columns(cursor):
     columns = _table_columns(cursor, "gallery")
     if "price" not in columns:
-        cursor.execute("ALTER TABLE gallery ADD COLUMN price INTEGER")
+        cursor.execute("ALTER TABLE gallery ADD COLUMN price INTEGER" if not _is_postgres() else "ALTER TABLE gallery ADD COLUMN IF NOT EXISTS price INTEGER")
     if "discount_price" not in columns:
-        cursor.execute("ALTER TABLE gallery ADD COLUMN discount_price INTEGER")
+        cursor.execute("ALTER TABLE gallery ADD COLUMN discount_price INTEGER" if not _is_postgres() else "ALTER TABLE gallery ADD COLUMN IF NOT EXISTS discount_price INTEGER")
     if "code" not in columns:
-        cursor.execute("ALTER TABLE gallery ADD COLUMN code TEXT")
+        cursor.execute("ALTER TABLE gallery ADD COLUMN code TEXT" if not _is_postgres() else "ALTER TABLE gallery ADD COLUMN IF NOT EXISTS code TEXT")
 
 def _ensure_gallery_code_index(cursor):
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_gallery_code ON gallery(code)")
 
 def _ensure_gallery_images_table(cursor):
-    cursor.execute("""CREATE TABLE IF NOT EXISTS gallery_images (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        gallery_id INTEGER NOT NULL,
-        image TEXT NOT NULL,
-        display_order INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (gallery_id) REFERENCES gallery(id) ON DELETE CASCADE
-    )""")
+    _create_table(
+        cursor,
+        """CREATE TABLE IF NOT EXISTS gallery_images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            gallery_id INTEGER NOT NULL,
+            image TEXT NOT NULL,
+            display_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (gallery_id) REFERENCES gallery(id) ON DELETE CASCADE
+        )""",
+        """CREATE TABLE IF NOT EXISTS gallery_images (
+            id SERIAL PRIMARY KEY,
+            gallery_id INTEGER NOT NULL REFERENCES gallery(id) ON DELETE CASCADE,
+            image TEXT NOT NULL,
+            display_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
 
 def _normalize_code(value):
     text = (value or "").strip().upper()

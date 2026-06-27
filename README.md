@@ -7,8 +7,14 @@ https://partybing.in
 - URL: https://partybing.in/admin
 - Password: `partybing@2026`
 
+## Vercel Free Deploy
+- Use `vercel.json` for the Python function config.
+- Add a Vercel Blob store and set `BLOB_READ_WRITE_TOKEN`.
+- If you want persistent data on Vercel, add a hosted Postgres database and set `DATABASE_URL`.
+- SQLite stays available for local development, but Vercel serverless storage is ephemeral.
+
 ## Tech Stack
-- **Backend:** Python FastAPI + SQLite
+- **Backend:** Python FastAPI + SQLite local fallback / Postgres on Vercel
 - **Frontend:** HTML/CSS/JS (Jinja2 templates, no framework)
 - **Server:** EC2 (Amazon Linux, Mumbai region) + Nginx + SSL (Let's Encrypt)
 - **Port:** 8002 (behind Nginx reverse proxy)

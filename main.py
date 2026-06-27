@@ -5,6 +5,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.gzip import GZipMiddleware
 from database import init_db, get_db, get_all_settings, get_setting, _unique_gallery_code
 import os, json, shutil, uuid
+from io import BytesIO
+from urllib.parse import quote
+from urllib.request import Request as UrlRequest, urlopen
 from typing import Optional, List
 from datetime import datetime
 from functools import lru_cache
@@ -71,17 +74,71 @@ def _safe_int_field(value, fallback):
     except (AttributeError, ValueError):
         return fallback
 
-def _save_uploaded_image(upload: UploadFile):
+def _use_blob_storage():
+    return bool(os.getenv("BLOB_READ_WRITE_TOKEN") and os.getenv("VERCEL_URL"))
+
+def _optimize_image_bytes(raw_bytes, original_filename, max_width=1200, quality=80):
+    try:
+        img = Image.open(BytesIO(raw_bytes))
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((max_width, new_height), Image.LANCZOS)
+        output = BytesIO()
+        img.save(output, "WEBP", quality=quality)
+        return output.getvalue(), ".webp", "image/webp"
+    except Exception:
+        ext = os.path.splitext(original_filename or "")[1].lower() or ".jpg"
+        mime_map = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+        }
+        return raw_bytes, ext, mime_map.get(ext, "application/octet-stream")
+
+def _upload_blob_from_bytes(file_bytes, filename, content_type):
+    endpoint = f"https://{os.getenv('VERCEL_URL')}/api/blob-upload?filename={quote(filename)}"
+    request = UrlRequest(endpoint, data=file_bytes, method="POST")
+    request.add_header("Content-Type", content_type or "application/octet-stream")
+    with urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return payload["url"]
+
+def _delete_blob_url(blob_url):
+    endpoint = f"https://{os.getenv('VERCEL_URL')}/api/blob-delete?url={quote(blob_url, safe='')}"
+    request = UrlRequest(endpoint, method="POST")
+    with urlopen(request, timeout=30) as response:
+        response.read()
+
+async def _save_uploaded_image(upload: UploadFile):
+    raw_bytes = await upload.read()
+    if _use_blob_storage():
+        optimized_bytes, ext, content_type = _optimize_image_bytes(raw_bytes, upload.filename or "image.jpg")
+        filename = f"{uuid.uuid4().hex}{ext}"
+        blob_url = _upload_blob_from_bytes(optimized_bytes, filename, content_type)
+        return blob_url, None
     ext = os.path.splitext(upload.filename or "")[1].lower() or ".jpg"
     filename = f"{uuid.uuid4().hex}{ext}"
     filepath = os.path.join("uploads", filename)
     with open(filepath, "wb") as f:
-        shutil.copyfileobj(upload.file, f)
+        f.write(raw_bytes)
     optimize_image(filepath)
     return f"/uploads/{filename}", filepath
 
 def _remove_uploaded_image(image_path: Optional[str]):
-    if not image_path or not image_path.startswith("/uploads/"):
+    if not image_path:
+        return
+    if image_path.startswith("http"):
+        try:
+            _delete_blob_url(image_path)
+        except Exception:
+            pass
+        return
+    if not image_path.startswith("/uploads/"):
         return
     physical = image_path.lstrip("/")
     if os.path.exists(physical):
@@ -378,14 +435,14 @@ async def admin_upload_image(
         final_discount_price = final_price
     conn = get_db()
     final_code = _unique_gallery_code(conn.cursor(), code)
-    thumbnail_path, _ = _save_uploaded_image(thumbnail_image)
+    thumbnail_path, _ = await _save_uploaded_image(thumbnail_image)
     conn.execute(
         "INSERT INTO gallery (image, caption, service_id, price, discount_price, code) VALUES (?,?,?,?,?,?)",
         (thumbnail_path, caption, service_id if service_id else None, final_price, final_discount_price, final_code)
     )
     gallery_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     for order, extra_image in enumerate([image for image in extra_images if getattr(image, "filename", "")], start=1):
-        extra_path, _ = _save_uploaded_image(extra_image)
+        extra_path, _ = await _save_uploaded_image(extra_image)
         conn.execute(
             "INSERT INTO gallery_images (gallery_id, image, display_order) VALUES (?,?,?)",
             (gallery_id, extra_path, order)
@@ -436,7 +493,7 @@ async def admin_update_gallery_item(
     image_path = item["image"]
     if thumbnail_image and getattr(thumbnail_image, "filename", ""):
         _remove_uploaded_image(item["image"])
-        image_path, _ = _save_uploaded_image(thumbnail_image)
+        image_path, _ = await _save_uploaded_image(thumbnail_image)
     conn.execute("""
         UPDATE gallery
         SET image=?, caption=?, service_id=?, price=?, discount_price=?, code=?
@@ -469,7 +526,7 @@ async def admin_add_gallery_images(request: Request, item_id: int, images: List[
     order = current_max + 1
     for upload in images:
         if getattr(upload, "filename", ""):
-            image_path, _ = _save_uploaded_image(upload)
+            image_path, _ = await _save_uploaded_image(upload)
             conn.execute(
                 "INSERT INTO gallery_images (gallery_id, image, display_order) VALUES (?,?,?)",
                 (item_id, image_path, order)
